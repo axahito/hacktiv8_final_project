@@ -14,10 +14,9 @@ import (
 
 func IndexPhoto(c *gin.Context) {
 	var photos []models.Photo
-	session := sessions.Default(c)
 	db := database.GetDB()
 
-	err := db.Find(&photos).Where("user_id = ?", session.Get("currentUser")).Error
+	err := db.Preload("User").Find(&photos).Preload("User").Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"result": "no photo available",
@@ -46,7 +45,7 @@ func ShowPhoto(c *gin.Context) {
 
 	fmt.Println(photo)
 
-	if session.Get("currentUser").(int) != photo.UserID {
+	if session.Get("currentUser").(int) != photo.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
@@ -64,7 +63,7 @@ func CreatePhoto(c *gin.Context) {
 	db := database.GetDB()
 	c.ShouldBind(&photo)
 
-	photo.UserID = session.Get("currentUser").(int)
+	photo.User.ID = session.Get("currentUser").(int)
 
 	err := db.Create(&photo).Error
 	if err != nil {
@@ -96,7 +95,7 @@ func PhotoUpdate(c *gin.Context) {
 		})
 	}
 
-	if session.Get("currentUser").(int) != photo.UserID {
+	if session.Get("currentUser").(int) != photo.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
@@ -152,7 +151,7 @@ func PhotoDelete(c *gin.Context) {
 		})
 	}
 
-	if session.Get("currentUser").(int) != photo.UserID {
+	if session.Get("currentUser").(int) != photo.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
