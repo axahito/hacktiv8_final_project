@@ -15,27 +15,22 @@ import (
 
 func UserRegister(c *gin.Context) {
 	var user models.User
-	var result gin.H
 
 	body, err := ioutil.ReadAll(c.Request.Body)
 	if err != nil {
-		result = gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"result":  "error parsing json",
 			"message": err,
-		}
-
-		c.JSON(http.StatusBadRequest, result)
+		})
 	}
 
 	json.Unmarshal(body, &user)
 
 	if !helpers.Email(user.Email) {
-		result = gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"result":  "error creating user",
 			"message": "email is invalid",
-		}
-
-		c.JSON(http.StatusBadRequest, result)
+		})
 	}
 
 	db := database.GetDB()
@@ -43,20 +38,16 @@ func UserRegister(c *gin.Context) {
 	c.ShouldBind(&user)
 	err = db.Create(&user).Error
 	if err != nil {
-		result = gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error creating user",
 			"err":     err,
-		}
-
-		c.JSON(http.StatusInternalServerError, result)
+		})
 	}
 
-	result = gin.H{
+	c.JSON(http.StatusCreated, gin.H{
 		"message":      "successfully registered user",
 		"created_user": user,
-	}
-
-	c.JSON(http.StatusCreated, result)
+	})
 }
 
 func UserLogin(c *gin.Context) {
@@ -100,6 +91,7 @@ func UserLogin(c *gin.Context) {
 func UserUpdate(c *gin.Context) {
 	var user models.User
 	var newUser models.User
+	var jsonData map[string]interface{}
 	session := sessions.Default(c)
 	db := database.GetDB()
 	id, err := strconv.Atoi(c.Param("user"))
@@ -110,7 +102,27 @@ func UserUpdate(c *gin.Context) {
 		return
 	}
 
-	c.Bind(&newUser)
+	body, err := ioutil.ReadAll(c.Request.Body)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"result":  "error reading request body",
+			"message": err,
+		})
+		return
+	}
+
+	err = json.Unmarshal(body, &jsonData)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"result":  "error parsing json",
+			"message": err,
+		})
+		return
+	}
+
+	newUser.Age = jsonData["age"].(int)
+	newUser.Email = jsonData["email"].(string)
+	newUser.Username = jsonData["username"].(string)
 
 	err = db.First(&user, id).Error
 	if err != nil {

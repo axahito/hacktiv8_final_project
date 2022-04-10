@@ -24,14 +24,15 @@ func Serve() *gin.Engine {
 		userRoutes.DELETE("/:user", handlers.UserDelete)
 	}
 
-	// photoRoutes := route.Group("/photo")
-	// {
-	// 	route.GET("/")
-	// 	route.GET("/:photo")
-	// 	route.POST("/")
-	// 	route.PUT("/:photo")
-	// 	route.DELETE("/:photo")
-	// }
+	photoRoutes := route.Group("/photo")
+	{
+		photoRoutes.Use(middlewares.Authenticate())
+		photoRoutes.GET("/", handlers.IndexPhoto)
+		photoRoutes.GET("/:photo", handlers.ShowPhoto)
+		photoRoutes.POST("/", handlers.CreatePhoto)
+		photoRoutes.PUT("/:photo", handlers.PhotoUpdate)
+		photoRoutes.DELETE("/:photo", handlers.PhotoDelete)
+	}
 
 	// commentRoute := route.Group("/comment")
 	// {

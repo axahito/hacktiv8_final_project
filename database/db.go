@@ -38,6 +38,7 @@ func SetupDB() {
 	}
 
 	db.AutoMigrate(models.User{})
+	db.AutoMigrate(models.Photo{})
 }
 
 func GetDB() *gorm.DB {
