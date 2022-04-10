@@ -4,11 +4,15 @@ import (
 	"final_project/handlers"
 	"final_project/middlewares"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 )
 
 func Serve() *gin.Engine {
 	route := gin.Default()
+	store := cookie.NewStore([]byte("urgentMatters"))
+	route.Use(sessions.Sessions("mysession", store))
 
 	route.POST("/register", handlers.UserRegister)
 	route.POST("/login", handlers.UserLogin)
@@ -16,8 +20,8 @@ func Serve() *gin.Engine {
 	userRoutes := route.Group("/user")
 	{
 		userRoutes.Use(middlewares.Authenticate())
-		userRoutes.PUT("/:user")
-		userRoutes.DELETE("/:user")
+		userRoutes.PUT("/:user", handlers.UserUpdate)
+		userRoutes.DELETE("/:user", handlers.UserDelete)
 	}
 
 	// photoRoutes := route.Group("/photo")
