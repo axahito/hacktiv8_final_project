@@ -100,7 +100,6 @@ func UserLogin(c *gin.Context) {
 func UserUpdate(c *gin.Context) {
 	var user models.User
 	var newUser models.User
-	// var currentUser models.User
 	session := sessions.Default(c)
 	db := database.GetDB()
 	id, err := strconv.Atoi(c.Param("user"))
@@ -136,10 +135,17 @@ func UserUpdate(c *gin.Context) {
 
 func UserDelete(c *gin.Context) {
 	var user models.User
+	session := sessions.Default(c)
 	db := database.GetDB()
-	id := c.Param("user")
+	id, err := strconv.Atoi(c.Param("user"))
+	if session.Get("currentUser") != id {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"result": "unauthorized",
+		})
+		return
+	}
 
-	err := db.First(&user, id).Error
+	err = db.First(&user, id).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"result": "data not found",
