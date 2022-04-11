@@ -5,7 +5,6 @@ import (
 	"final_project/database"
 	"final_project/dto"
 	"final_project/models"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -13,40 +12,38 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func IndexPhoto(c *gin.Context) {
-	var photos []models.Photo
+func IndexComment(c *gin.Context) {
+	var comments []models.Comment
 	db := database.GetDB()
 
-	err := db.Preload("User").Find(&photos).Preload("User").Error
+	err := db.Preload("User").Find(&comments).Preload("User").Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"result": "no photo available",
+			"result": "no Comment available",
 		})
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"result": "sucessfully retreived photos",
-		"photos": dto.MapPhoto(photos),
+		"result":   "sucessfully retreived comments",
+		"comments": dto.MapComment(comments),
 	})
 }
 
-func ShowPhoto(c *gin.Context) {
-	var photo models.Photo
+func ShowComment(c *gin.Context) {
+	var comment models.Comment
 	session := sessions.Default(c)
 	db := database.GetDB()
-	id := c.Param("photo")
+	id := c.Param("comment")
 
-	err := db.Where("id = ?", id).First(&photo).Error
+	err := db.Where("id = ?", id).First(&comment).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"result": "photo not found",
+			"result": "Comment not found",
 		})
 		return
 	}
 
-	fmt.Println(photo)
-
-	if session.Get("currentUser").(int) != photo.User.ID {
+	if session.Get("currentUser").(int) != comment.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
@@ -54,54 +51,53 @@ func ShowPhoto(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"photo": photo,
+		"comment": comment,
 	})
 }
 
-func CreatePhoto(c *gin.Context) {
-	var photo models.Photo
+func CreateComment(c *gin.Context) {
+	var comment models.Comment
 	session := sessions.Default(c)
 	db := database.GetDB()
-	c.ShouldBind(&photo)
+	c.ShouldBind(&comment)
 
-	photo.User.ID = session.Get("currentUser").(int)
+	comment.User.ID = session.Get("currentUser").(int)
 
-	err := db.Create(&photo).Error
+	err := db.Create(&comment).Error
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"result":  "error uploading photo",
+			"result":  "error uploading comment",
 			"message": err,
 		})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"result":     "photo uploaded",
-		"id":         photo.ID,
-		"title":      photo.Title,
-		"caption":    photo.Caption,
-		"photo_url":  photo.PhotoURL,
-		"user_id":    photo.UserID,
-		"created_at": photo.CreatedAt,
+		"result":     "comment uploaded",
+		"id":         comment.ID,
+		"message":    comment.Message,
+		"photo_id":   comment.PhotoID,
+		"user_id":    comment.UserID,
+		"created_at": comment.CreatedAt,
 	})
 }
 
-func PhotoUpdate(c *gin.Context) {
-	var photo models.Photo
-	var newPhoto models.Photo
+func CommentUpdate(c *gin.Context) {
+	var comment models.Comment
+	var newComment models.Comment
 	var jsonData map[string]interface{}
 	session := sessions.Default(c)
 	db := database.GetDB()
-	id := c.Param("photo")
+	id := c.Param("comment")
 
-	err := db.First(&photo, id).Error
+	err := db.First(&comment, id).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"result": "data not found",
 		})
 	}
 
-	if session.Get("currentUser").(int) != photo.User.ID {
+	if session.Get("currentUser").(int) != comment.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
@@ -126,58 +122,55 @@ func PhotoUpdate(c *gin.Context) {
 		return
 	}
 
-	newPhoto.Title = jsonData["title"].(string)
-	newPhoto.Caption = jsonData["caption"].(string)
-	newPhoto.PhotoURL = jsonData["photo_url"].(string)
+	newComment.Message = jsonData["message"].(string)
 
-	err = db.Model(&photo).Updates(newPhoto).Error
+	err = db.Model(&comment).Updates(newComment).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"result":  "error updating photo",
+			"result":  "error updating comment",
 			"message": err,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"result":     "photo successfulley updated",
-			"id":         photo.ID,
-			"title":      photo.Title,
-			"caption":    photo.Caption,
-			"photo_url":  photo.PhotoURL,
-			"user_id":    photo.UserID,
-			"updated_at": photo.UpdatedAt,
+			"result":     "comment successfulley updated",
+			"id":         comment.ID,
+			"message":    comment.Message,
+			"photo_id":   comment.PhotoID,
+			"user_id":    comment.UserID,
+			"updated_at": comment.UpdatedAt,
 		})
 	}
 }
 
-func PhotoDelete(c *gin.Context) {
-	var photo models.Photo
+func CommentDelete(c *gin.Context) {
+	var comment models.Comment
 	session := sessions.Default(c)
 	db := database.GetDB()
-	id := c.Param("photo")
+	id := c.Param("comment")
 
-	err := db.First(&photo, id).Error
+	err := db.First(&comment, id).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"result": "data not found",
 		})
 	}
 
-	if session.Get("currentUser").(int) != photo.User.ID {
+	if session.Get("currentUser").(int) != comment.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
 		return
 	}
 
-	err = db.Delete(&photo).Error
+	err = db.Delete(&comment).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"result":  "error deleting photo",
+			"result":  "error deleting comment",
 			"message": err,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"result": "photo successfully deleted",
+			"result": "comment successfully deleted",
 		})
 	}
 }

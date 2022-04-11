@@ -45,8 +45,11 @@ func UserRegister(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"message":      "successfully registered user",
-		"created_user": user,
+		"message":  "successfully registered user",
+		"age":      user.Age,
+		"email":    user.Email,
+		"username": user.Username,
+		"id":       user.ID,
 	})
 }
 
@@ -139,8 +142,12 @@ func UserUpdate(c *gin.Context) {
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"result":       "user successfulley updated",
-			"updated user": user,
+			"result":     "user successfulley updated",
+			"age":        user.Age,
+			"email":      user.Email,
+			"username":   user.Username,
+			"id":         user.ID,
+			"updated_at": user.UpdatedAt,
 		})
 	}
 }

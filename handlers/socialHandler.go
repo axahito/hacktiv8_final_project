@@ -13,40 +13,40 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func IndexPhoto(c *gin.Context) {
-	var photos []models.Photo
+func IndexSocial(c *gin.Context) {
+	var socials []models.Social
 	db := database.GetDB()
 
-	err := db.Preload("User").Find(&photos).Preload("User").Error
+	err := db.Preload("User").Find(&socials).Preload("User").Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"result": "no photo available",
+			"result": "no Social available",
 		})
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"result": "sucessfully retreived photos",
-		"photos": dto.MapPhoto(photos),
+		"result":  "sucessfully retreived Socials",
+		"Socials": dto.MapSocial(socials),
 	})
 }
 
-func ShowPhoto(c *gin.Context) {
-	var photo models.Photo
+func ShowSocial(c *gin.Context) {
+	var social models.Social
 	session := sessions.Default(c)
 	db := database.GetDB()
-	id := c.Param("photo")
+	id := c.Param("Social")
 
-	err := db.Where("id = ?", id).First(&photo).Error
+	err := db.Where("id = ?", id).First(&social).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
-			"result": "photo not found",
+			"result": "social not found",
 		})
 		return
 	}
 
-	fmt.Println(photo)
+	fmt.Println(social)
 
-	if session.Get("currentUser").(int) != photo.User.ID {
+	if session.Get("currentUser").(int) != social.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
@@ -54,54 +54,52 @@ func ShowPhoto(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"photo": photo,
+		"social": social,
 	})
 }
 
-func CreatePhoto(c *gin.Context) {
-	var photo models.Photo
+func CreateSocial(c *gin.Context) {
+	var Social models.Social
 	session := sessions.Default(c)
 	db := database.GetDB()
-	c.ShouldBind(&photo)
+	c.ShouldBind(&Social)
 
-	photo.User.ID = session.Get("currentUser").(int)
+	Social.User.ID = session.Get("currentUser").(int)
 
-	err := db.Create(&photo).Error
+	err := db.Create(&Social).Error
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
-			"result":  "error uploading photo",
+			"result":  "error uploading social",
 			"message": err,
 		})
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"result":     "photo uploaded",
-		"id":         photo.ID,
-		"title":      photo.Title,
-		"caption":    photo.Caption,
-		"photo_url":  photo.PhotoURL,
-		"user_id":    photo.UserID,
-		"created_at": photo.CreatedAt,
+		"result":      "social uploaded",
+		"id":          Social.ID,
+		"name":        Social.Name,
+		"socials_url": Social.SocialURL,
+		"created_at":  Social.CreatedAt,
 	})
 }
 
-func PhotoUpdate(c *gin.Context) {
-	var photo models.Photo
-	var newPhoto models.Photo
+func SocialUpdate(c *gin.Context) {
+	var social models.Social
+	var newSocial models.Social
 	var jsonData map[string]interface{}
 	session := sessions.Default(c)
 	db := database.GetDB()
-	id := c.Param("photo")
+	id := c.Param("social")
 
-	err := db.First(&photo, id).Error
+	err := db.First(&social, id).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"result": "data not found",
 		})
 	}
 
-	if session.Get("currentUser").(int) != photo.User.ID {
+	if session.Get("currentUser").(int) != social.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
@@ -126,58 +124,56 @@ func PhotoUpdate(c *gin.Context) {
 		return
 	}
 
-	newPhoto.Title = jsonData["title"].(string)
-	newPhoto.Caption = jsonData["caption"].(string)
-	newPhoto.PhotoURL = jsonData["photo_url"].(string)
+	newSocial.Name = jsonData["name"].(string)
+	newSocial.SocialURL = jsonData["social_url"].(string)
 
-	err = db.Model(&photo).Updates(newPhoto).Error
+	err = db.Model(&social).Updates(newSocial).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"result":  "error updating photo",
+			"result":  "error updating Social",
 			"message": err,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"result":     "photo successfulley updated",
-			"id":         photo.ID,
-			"title":      photo.Title,
-			"caption":    photo.Caption,
-			"photo_url":  photo.PhotoURL,
-			"user_id":    photo.UserID,
-			"updated_at": photo.UpdatedAt,
+			"result":     "Social successfulley updated",
+			"id":         social.ID,
+			"name":       social.Name,
+			"social_url": social.SocialURL,
+			"user_id":    social.UserID,
+			"updated_at": social.UpdatedAt,
 		})
 	}
 }
 
-func PhotoDelete(c *gin.Context) {
-	var photo models.Photo
+func SocialDelete(c *gin.Context) {
+	var social models.Social
 	session := sessions.Default(c)
 	db := database.GetDB()
-	id := c.Param("photo")
+	id := c.Param("social")
 
-	err := db.First(&photo, id).Error
+	err := db.First(&social, id).Error
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{
 			"result": "data not found",
 		})
 	}
 
-	if session.Get("currentUser").(int) != photo.User.ID {
+	if session.Get("currentUser").(int) != social.User.ID {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result": "unauthorized",
 		})
 		return
 	}
 
-	err = db.Delete(&photo).Error
+	err = db.Delete(&social).Error
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"result":  "error deleting photo",
+			"result":  "error deleting social",
 			"message": err,
 		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
-			"result": "photo successfully deleted",
+			"result": "social successfully deleted",
 		})
 	}
 }
