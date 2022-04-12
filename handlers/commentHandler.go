@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	validation "github.com/go-ozzo/ozzo-validation"
 )
 
 func IndexComment(c *gin.Context) {
@@ -59,11 +60,23 @@ func CreateComment(c *gin.Context) {
 	var comment models.Comment
 	session := sessions.Default(c)
 	db := database.GetDB()
+
 	c.ShouldBind(&comment)
+	err := validation.ValidateStruct(
+		&comment,
+		validation.Field(&comment.Message, validation.Required),
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "validation error",
+			"err":     err,
+		})
+		return
+	}
 
 	comment.User.ID = session.Get("currentUser").(int)
 
-	err := db.Create(&comment).Error
+	err = db.Create(&comment).Error
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result":  "error uploading comment",

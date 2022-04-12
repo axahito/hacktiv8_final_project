@@ -11,37 +11,37 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/is"
 )
 
 func UserRegister(c *gin.Context) {
 	var user models.User
-
-	body, err := ioutil.ReadAll(c.Request.Body)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"result":  "error parsing json",
-			"message": err,
-		})
-	}
-
-	json.Unmarshal(body, &user)
-
-	if !helpers.Email(user.Email) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"result":  "error creating user",
-			"message": "email is invalid",
-		})
-	}
-
 	db := database.GetDB()
 
 	c.ShouldBind(&user)
+	err := validation.ValidateStruct(
+		&user,
+		validation.Field(&user.Email, validation.Required, is.Email),
+		validation.Field(&user.Username, validation.Required),
+		validation.Field(&user.Password, validation.Required, validation.Length(6, 0)),
+		validation.Field(&user.Age, validation.Required, validation.Min(8)),
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "validation error",
+			"err":     err,
+		})
+		return
+	}
+
 	err = db.Create(&user).Error
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"message": "error creating user",
 			"err":     err,
 		})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{

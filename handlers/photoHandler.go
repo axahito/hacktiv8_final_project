@@ -11,6 +11,8 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/is"
 )
 
 func IndexPhoto(c *gin.Context) {
@@ -62,11 +64,24 @@ func CreatePhoto(c *gin.Context) {
 	var photo models.Photo
 	session := sessions.Default(c)
 	db := database.GetDB()
+
 	c.ShouldBind(&photo)
+	err := validation.ValidateStruct(
+		&photo,
+		validation.Field(&photo.Title, validation.Required),
+		validation.Field(&photo.PhotoURL, validation.Required, is.URL),
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "validation error",
+			"err":     err,
+		})
+		return
+	}
 
 	photo.User.ID = session.Get("currentUser").(int)
 
-	err := db.Create(&photo).Error
+	err = db.Create(&photo).Error
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result":  "error uploading photo",

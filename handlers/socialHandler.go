@@ -11,6 +11,8 @@ import (
 
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	validation "github.com/go-ozzo/ozzo-validation"
+	"github.com/go-ozzo/ozzo-validation/is"
 )
 
 func IndexSocial(c *gin.Context) {
@@ -59,14 +61,27 @@ func ShowSocial(c *gin.Context) {
 }
 
 func CreateSocial(c *gin.Context) {
-	var Social models.Social
+	var social models.Social
 	session := sessions.Default(c)
 	db := database.GetDB()
-	c.ShouldBind(&Social)
 
-	Social.User.ID = session.Get("currentUser").(int)
+	c.ShouldBind(&social)
+	err := validation.ValidateStruct(
+		&social,
+		validation.Field(&social.Name, validation.Required),
+		validation.Field(&social.SocialURL, validation.Required, is.URL),
+	)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"message": "validation error",
+			"err":     err,
+		})
+		return
+	}
 
-	err := db.Create(&Social).Error
+	social.User.ID = session.Get("currentUser").(int)
+
+	err = db.Create(&social).Error
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"result":  "error uploading social",
@@ -77,10 +92,10 @@ func CreateSocial(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, gin.H{
 		"result":      "social uploaded",
-		"id":          Social.ID,
-		"name":        Social.Name,
-		"socials_url": Social.SocialURL,
-		"created_at":  Social.CreatedAt,
+		"id":          social.ID,
+		"name":        social.Name,
+		"socials_url": social.SocialURL,
+		"created_at":  social.CreatedAt,
 	})
 }
 
